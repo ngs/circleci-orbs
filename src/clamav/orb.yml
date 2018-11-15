@@ -25,7 +25,7 @@ jobs:
                 command: /usr/local/bin/freshclam
       - checkout
       - run:
-          name: "Run clanscan"
+          name: "Run clamscan"
           command: /usr/local/bin/clamscan -r << parameters.path >>
 
 executors:
