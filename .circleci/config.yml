@@ -2,7 +2,7 @@ version: 2.1
 
 orbs:
   slack: circleci/slack@volatile
-  clamav: ngs/clamav@dev:0.0.1
+  clamav: ngs/clamav@0.0.1
 
 executors:
   cli:
