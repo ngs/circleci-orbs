@@ -1,0 +1,21 @@
+version: 2.1
+
+description: |
+  Just say Hello to CircleCI Orb
+commands:
+  install:
+    parameters:
+      to:
+        type: string
+        default: "world"
+    steps:
+      - run:
+          name: "Hello"
+          command: |
+            echo "Hello << parameters.to >>"
+
+executors:
+  default:
+    description: Hello
+    docker:
+      - image: alpine:3.7

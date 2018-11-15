@@ -1,0 +1,120 @@
+version: 2.1
+
+orbs:
+  slack: circleci/slack@volatile
+
+executors:
+  cli:
+    docker:
+      - image: circleci/circleci-cli:0.1.2709
+
+workflows:
+  version: 2
+  main:
+    jobs:
+      - lint
+      - build
+
+      - dev-release:
+          requires:
+            - build
+            - lint
+
+      - trigger-downstream:
+          requires:
+            - dev-release
+          filters:
+            branches:
+              only: master
+          context: orb-publishing
+
+      - hold:
+          type: approval
+          requires:
+            - trigger-downstream
+          filters:
+            branches:
+              only: master
+
+      - dev-promote-patch:
+          requires:
+            - hold
+          filters:
+            branches:
+              only: master
+          context: orb-publishing
+
+
+jobs:
+  lint:
+    docker:
+      - image: singapore/lint-condo
+    steps:
+      - checkout
+      - run:
+          'yamllint .'
+
+  build:
+    executor: cli
+    steps:
+      - checkout
+      - run: "echo -e \"token: placeholder\nverbose: false > ~/.circleci/cli.yml\""
+      - run: "sh scripts/validate-orbs.sh"
+
+  dev-release:
+    executor: cli
+    steps:
+      - checkout
+      - run:
+          name: Publish dev releases of any modified orbs
+          command: |
+            GIT_LOG=$(git log -1 --format="" --name-only)
+
+            echo "Files changed:" $GIT_LOG
+
+            bash scripts/dev-release.sh
+
+  trigger-downstream:
+    machine: true
+    steps:
+      - run: |
+          # We probably want to have a mapping of orbs that have changed to
+          # test projects triggered instead of just triggering everything all
+          # the time.
+          BASE="https://circleci.com/api/v1.1/project/github"
+          PROJECT="circleci/aws-code-deploy-orb-test/build"
+          curl -X POST $BASE/$PROJECT?circle-token=$CIRCLECI_API_TOKEN
+
+      - slack/notify:
+          message: "Orbs from commit ${CIRCLE_SHA1} on the ${CIRCLE_BRANCH} branch are ready for review/approval: https://circleci.com/workflow-run/${CIRCLE_WORKFLOW_ID}"
+          mentions: "${NGS_SLACK_UUID}"
+
+  dev-promote-patch:
+    executor: cli
+    steps:
+      - checkout
+
+      - slack/notify:
+          message: "Orb publishing was approved for any orbs modified in commit ${CIRCLE_SHA1} on the ${CIRCLE_BRANCH} branch: https://circleci.com/workflow-run/${CIRCLE_WORKFLOW_ID}"
+          mentions: "${NGS_SLACK_UUID}"
+
+      - run:
+          name: Publish any modified orbs
+          shell: /bin/bash -exo pipefail
+          command: |
+            GIT_LOG=$(git log -1 --format="" --name-only)
+
+            echo "Files changed:" $GIT_LOG
+
+            for ORB in src/*/; do
+              orbname=$(basename $ORB)
+
+              if [[ $(git log -1 --format="" --name-only | grep "$orbname") ]]; then
+
+                echo "promoting ngs/${orbname}@dev:${CIRCLE_BRANCH}-${CIRCLE_SHA1} as patch release"
+
+                circleci orb publish promote ngs/${orbname}@dev:${CIRCLE_BRANCH}-${CIRCLE_SHA1} patch
+              else
+                echo "${orbname} not modified; no need to promote"
+              fi
+            done
