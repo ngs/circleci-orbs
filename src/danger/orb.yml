@@ -1,0 +1,16 @@
+version: 2.1
+
+description: Danger
+
+jobs:
+  run:
+    description: Runs danger
+    executor: danger
+    steps:
+      - checkout
+      - run: danger
+
+executors:
+  danger:
+    docker:
+      - image: dantoml/danger:latest
