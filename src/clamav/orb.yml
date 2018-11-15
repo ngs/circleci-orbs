@@ -1,0 +1,39 @@
+version: 2.1
+
+description: |
+
+jobs:
+  scan:
+    description: |
+      Run virus scan using ClamAV.
+
+      Setting `update` paramter to `false` disables updating virus database. Default is `true`.
+    executor: clamav
+    parameters:
+      path:
+        type: string
+        default: .
+      update:
+        type: boolean
+        default: true
+    steps:
+      - when:
+          condition: << parameters.update >>
+          steps:
+            - run:
+                name: "Update Virus Database"
+                command: /usr/local/bin/freshclam
+      - checkout
+      - run:
+          name: "Run clanscan"
+          command: /usr/local/bin/clamscan -r << parameters.path >>
+
+executors:
+  clamav:
+    description: ClamAV
+    parameters:
+      tag:
+        type: string
+        default: "latest"
+    docker:
+      - image: quay.io/ukhomeofficedigital/clamav:<< parameters.tag >>

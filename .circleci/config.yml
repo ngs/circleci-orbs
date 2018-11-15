@@ -2,6 +2,7 @@ version: 2.1
 
 orbs:
   slack: circleci/slack@volatile
+  clamav: ngs/clamav@dev:latest
 
 executors:
   cli:
@@ -14,11 +15,14 @@ workflows:
     jobs:
       - lint
       - build
+      - clamav/scan
 
       - dev-release:
           requires:
             - build
             - lint
+            - clamav/scan
+          context: orb-publishing
 
       - notify_slack:
           requires:
