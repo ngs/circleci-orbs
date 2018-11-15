@@ -20,7 +20,7 @@ workflows:
             - build
             - lint
 
-      - trigger-downstream:
+      - notify_slack:
           requires:
             - dev-release
           filters:
@@ -31,7 +31,7 @@ workflows:
       - hold:
           type: approval
           requires:
-            - trigger-downstream
+            - notify_slack
           filters:
             branches:
               only: master
@@ -74,17 +74,9 @@ jobs:
 
             bash scripts/dev-release.sh
 
-  trigger-downstream:
+  notify_slack:
     machine: true
     steps:
-      - run: |
-          # We probably want to have a mapping of orbs that have changed to
-          # test projects triggered instead of just triggering everything all
-          # the time.
-          BASE="https://circleci.com/api/v1.1/project/github"
-          PROJECT="circleci/aws-code-deploy-orb-test/build"
-          curl -X POST $BASE/$PROJECT?circle-token=$CIRCLECI_API_TOKEN
-
       - slack/notify:
           message: "Orbs from commit ${CIRCLE_SHA1} on the ${CIRCLE_BRANCH} branch are ready for review/approval: https://circleci.com/workflow-run/${CIRCLE_WORKFLOW_ID}"
           mentions: "${NGS_SLACK_UUID}"
@@ -113,7 +105,7 @@ jobs:
 
                 echo "promoting ngs/${orbname}@dev:${CIRCLE_BRANCH}-${CIRCLE_SHA1} as patch release"
 
-                circleci orb publish promote ngs/${orbname}@dev:${CIRCLE_BRANCH}-${CIRCLE_SHA1} patch
+                circleci orb publish promote ngs/${orbname}@dev:${CIRCLE_BRANCH}-${CIRCLE_SHA1} patch --token $CIRCLECI_API_TOKEN
               else
                 echo "${orbname} not modified; no need to promote"
               fi
