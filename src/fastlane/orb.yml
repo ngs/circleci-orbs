@@ -1,0 +1,70 @@
+version: 2.1
+
+description: Fastlane
+
+executors:
+  macos:
+    macos:
+      xcode: << parameters.xcode >>
+    parameters:
+      xcode:
+        description: 'Xcode version'
+        default: '10.1.0'
+        type: string
+    environment:
+      XCODE_PATH: /Applications/Xcode.app
+      FASTLANE_SKIP_UPDATE_CHECK: 1
+
+jobs:
+  lane:
+    executor: macos
+    parameters:
+      command:
+        default: ''
+        description: 'lane to run'
+        type: string
+    steps:
+      - checkout
+      - bundle-install
+      - lane:
+          command: << parameters.command >>
+
+commands:
+  bundle-install:
+    description: Run bundle install
+    parameters:
+      bundle_path:
+        description: 'Path to bundle'
+        default: 'Vendor/bundler'
+        type: string
+      cache_key_prefix:
+        description: 'Cache key prefix'
+        default: 1-bundler-
+        type: string
+    steps:
+      - restore_cache:
+          key: << parameters.cache_key_prefix >>{{ checksum "Gemfile.lock" }}
+      - run:
+          name: 'Bundle install'
+          command: '[ -f Gemfile ] && bundle install --path << parameters.bundle_path >>'
+      - save_cache:
+          key: << parameters.cache_key_prefix >>{{ checksum "Gemfile.lock" }}
+          paths:
+            - << parameters.bundle_path >>
+
+  lane:
+    description: Run fastlane command
+    parameters:
+      command:
+        description: Lane to run
+        default: ''
+        type: string
+    steps:
+      - run:
+          name: 'fastlane << parameters.command >>'
+          command: |
+            if [ -f Gemfile ]; then
+              bundle exec fastlane << parameters.command >>
+            else
+              fastlane << parameters.command >>
+            fi

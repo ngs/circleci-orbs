@@ -80,3 +80,6 @@ commands:
       - run:
           name: Copy Cartfile.resolved
           command: '[ -f Carthage/Cartfile.resolved ] || cp Cartfile.resolved Carthage/Cartfile.resolved'
+      - save_cache:
+          key: << parameters.cache_key_prefix >>{{ checksum "Cartfile.resolved" }}
+          paths: [Carthage]
