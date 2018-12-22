@@ -4,6 +4,8 @@
 
 Source code of [CircleCI Orbs].
 
+- [ngs/fastlane](https://circleci.com/orbs/registry/orb/ngs/fastlane)
+- [ngs/carthage](https://circleci.com/orbs/registry/orb/ngs/carthage)
 - [ngs/clamav](https://circleci.com/orbs/registry/orb/ngs/clamav)
 - [ngs/swiftlint](https://circleci.com/orbs/registry/orb/ngs/swiftlint)
 - [ngs/danger](https://circleci.com/orbs/registry/orb/ngs/danger)
