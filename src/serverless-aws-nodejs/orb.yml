@@ -1,0 +1,83 @@
+version: 2.1
+
+executors:
+  nodejs:
+    working_directory: ~/project
+    docker:
+      - image: circleci/node:8.10.0
+
+  app:
+    working_directory: ~/project
+    docker:
+      - image: circleci/node:8.10.0
+      - image: circleci/mysql:5.6-ram
+        command: [--character-set-server=utf8mb4, --collation-server=utf8mb4_bin]
+        environment:
+          MYSQL_ROOT_PASSWORD: password
+    environment:
+      DATABASE_URL: 'mysql://root:password@localhost:3306/circle_test'
+
+commands:
+  setup:
+    steps:
+      - checkout
+      - restore_cache:
+          name: Restoring Cache - Yarn
+          keys:
+            - yarn-v1-{{ .Branch }}-{{ checksum "yarn.lock" }}
+            - yarn-v1-{{ .Branch }}-
+      - run: yarn
+      - save_cache:
+          name: Save Cache - Yarn
+          key: yarn-v1-{{ .Branch }}-{{ checksum "yarn.lock" }}
+          paths:
+            - ~/.cache/yarn
+            - ./node_modules
+
+jobs:
+  deploy:
+    executor: nodejs
+    parameters:
+      stage:
+        type: string
+    steps:
+      - setup
+      - run:
+          name: Deploy
+          command: npx serverless deploy --stage << parameters.stage >>
+      - store_artifacts:
+          path: .serverless
+          destination: serverless
+
+
+  invoke:
+    executor: nodejs
+    parameters:
+      stage:
+        type: string
+      function:
+        type: string
+    steps:
+      - setup
+      - run:
+          name: Invoke migration
+          command: npx serverless invoke --stage << parameters.stage >> --function << parameters.function >> --log
+
+  test:
+    executor: app
+    steps:
+      - setup
+      - run:
+          name: Run migration
+          command: yarn orm migration:run
+      - run:
+          name: Run Tests
+          command: yarn test
+
+  lint:
+    executor: nodejs
+    steps:
+      - setup
+      - run:
+          name: Run Lint
+          command: yarn lint:ts
