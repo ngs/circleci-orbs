@@ -10,7 +10,6 @@ executors:
       - image: circleci/circleci-cli:0.1.2709
 
 workflows:
-  version: 2
   main:
     jobs:
       - lint
@@ -30,7 +29,6 @@ workflows:
             branches:
               only: master
           context: orb-publishing
-
 
 jobs:
   lint:
