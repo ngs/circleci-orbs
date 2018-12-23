@@ -1,0 +1,55 @@
+version: 2.1
+
+description: |
+
+commands:
+  exec:
+    description: Executes dotnet command
+    parameters:
+      command:
+        type: string
+        default: ''
+    steps:
+      - run:
+          name: dotnet << parameters.command >>
+          command: /usr/bin/dotnet << parameters.command >>
+
+jobs:
+  exec:
+    description: Executes single dotnet command
+    executor: dotnet
+    parameters:
+      command:
+        type: string
+        default: ''
+    steps:
+      - checkout
+      - exec:
+          command: << parameters.command >>
+
+  test:
+    description: Runs tests
+    executor: dotnet
+    parameters:
+      project:
+        description: Path to project
+        type: string
+        default: ''
+      options:
+        description: Options to pass
+        type: string
+        default: "--logger 'Console;verbosity=Detailed'"
+    steps:
+      - checkout
+      - exec:
+          command: test << parameters.project >> << parameters.options >>
+
+executors:
+  dotnet:
+    description: .NET Executor
+    parameters:
+      tag:
+        type: string
+        default: 2.2-sdk
+    docker:
+      - image: microsoft/dotnet:<< parameters.tag >>
