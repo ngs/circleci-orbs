@@ -1,0 +1,77 @@
+version: 2.1
+
+description: Lightweight Terraform Orb, not intended for generic use
+
+executors:
+  terraform:
+    docker:
+      - image: hashicorp/terraform:light
+    working_directory: /workspace
+
+commands:
+  tf:
+    parameters:
+      command:
+        type: string
+    steps:
+      - run:
+          name: terraform << parameters.command >>
+          command: terraform << parameters.command >>
+  init:
+    steps:
+      - tf:
+          command: init
+
+jobs:
+  validate:
+    executor: terraform
+    steps:
+      - checkout
+      - init
+      - tf:
+          command: validate
+
+  plan:
+    executor: terraform
+    steps:
+      - checkout
+      - init
+      - tf:
+          command: plan -out .terraform/terraform.tfplan
+      - persist_to_workspace:
+          root: /workspace/.terraform
+          paths:
+            - modules
+            - plugins
+            - terraform.tfplan
+
+  apply:
+    executor: terraform
+    steps:
+      - checkout
+      - attach_workspace:
+          at: /workspace/.terraform
+      - tf:
+          command: apply -auto-approve .terraform/terraform.tfplan
+
+examples:
+  main:
+    description: Validate, plan and apply
+    usage:
+      version: 2.1
+      orbs:
+        tf: ngs/terraform@0.0.1
+      workflows:
+        tf:
+          jobs:
+            - tf/validate:
+                name: validate
+            - tf/plan:
+                name: plan
+                requires: [validate]
+            - tf/apply:
+                name: apply
+                requires: [plan]
+                filters:
+                  branches:
+                    only: master
