@@ -21,28 +21,11 @@ workflows:
           requires:
             - build
             - lint
-            - clamav/scan
           context: orb-publishing
-
-      - notify_slack:
-          requires:
-            - dev-release
-          filters:
-            branches:
-              only: master
-          context: orb-publishing
-
-      - hold:
-          type: approval
-          requires:
-            - notify_slack
-          filters:
-            branches:
-              only: master
 
       - dev-promote-patch:
           requires:
-            - hold
+            - dev-release
           filters:
             branches:
               only: master
