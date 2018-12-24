@@ -18,7 +18,8 @@ commands:
     parameters:
       os:
         description: 'Target OS upparcase name: `IPHONEOS`, `MACOSX`, `TVOS`, `WATCHOS`'
-        type: string
+        type: enum
+        enum: [IPHONEOS, MACOSX, TVOS, WATCHOS]
       version:
         description: 'Target version to replace'
         type: string
@@ -27,7 +28,7 @@ commands:
           condition: << parameters.version >>
           steps:
             - run:
-                name: 'Replace Carthage checouts << parameters.os >>_DEPLOYMENT_TARGET to << parameters.version >>'
+                name: 'Replace Carthage checkouts << parameters.os >>_DEPLOYMENT_TARGET to << parameters.version >>'
                 command: |
                   find Carthage/Checkouts \( -name '*.pbxproj' -o -name '*.xcconfig' \) -print0 | \
                     xargs -0 sed -i "" "s/<< parameters.os >>_DEPLOYMENT_TARGET = [0-9].[0-9]/<< parameters.os >>_DEPLOYMENT_TARGET = << parameters.version >>/g"
