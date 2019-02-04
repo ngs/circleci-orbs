@@ -1,0 +1,73 @@
+version: 2.1
+
+description: Deploy artifacts to AWS S3
+
+executors:
+  awscli:
+    docker:
+      - image: quay.io/coreos/awscli:latest
+
+commands:
+  deploy:
+    parameters:
+      workspace:
+        type: string
+      artifacts:
+        type: string
+      bucket:
+        type: string
+      acl:
+        type: string
+        default: public-read
+    steps:
+      - attach_workspace:
+          at: << parameters.workspace >>
+      - run:
+          name: Deploy
+          command: aws s3 sync << parameters.workspace >>/<< parameters.artifacts >> s3://<< parameters.bucket >> --acl << parameters.acl >>
+
+jobs:
+  deploy:
+    executor: awscli
+    parameters:
+      workspace:
+        type: string
+      artifacts:
+        type: string
+      bucket:
+        type: string
+      acl:
+        type: string
+        default: public-read
+    steps:
+      - deploy:
+          workspace: << parameters.workspace >>
+          artifacts: << parameters.artifacts >>
+          bucket: << parameters.bucket >>
+          acl: << parameters.acl >>
+
+examples:
+  main:
+    description: Build and deploy
+    usage:
+      version: 2.1
+      orbs:
+        s3: ngs/s3-deploy@0.0.1
+      jobs:
+        build:
+          executor: ...
+          steps:
+            - checkout
+            - make
+      workflows:
+        main:
+          jobs:
+            - build
+            - s3/deploy:
+                requires: [build]
+                filters:
+                  branches:
+                    only: master
+                workspace: /workspace
+                artifacts: dist
+                bucket: my-artifacts
