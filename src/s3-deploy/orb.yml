@@ -19,13 +19,26 @@ commands:
       acl:
         type: string
         default: public-read
+      cloudfront_distribution_id:
+        type: string
+        default: \"\"
+      cloudfront_invalidation_paths:
+        type: string
+        default: '/*'
     steps:
       - attach_workspace:
           at: << parameters.workspace >>
       - run:
           name: Deploy
           command: aws s3 sync << parameters.workspace >>/<< parameters.artifacts >> s3://<< parameters.bucket >> --acl << parameters.acl >>
-
+      - when:
+          condition: <<parameters.cloudfront_distribution_id >>
+          steps:
+            - run:
+                name: Invalidate CloudFront Distribution
+                command: |
+                  aws configure set preview.cloudfront true
+                  aws cloudfront create-invalidation --distribution-id << parameters.cloudfront_distribution_id >> --paths << parameters.cloudfront_invalidation_paths >>
 jobs:
   deploy:
     executor: awscli
@@ -39,12 +52,20 @@ jobs:
       acl:
         type: string
         default: public-read
+      cloudfront_distribution_id:
+        type: string
+        default: \"\"
+      cloudfront_invalidation_paths:
+        type: string
+        default: '/*'
     steps:
       - deploy:
           workspace: << parameters.workspace >>
           artifacts: << parameters.artifacts >>
           bucket: << parameters.bucket >>
           acl: << parameters.acl >>
+          cloudfront_distribution_id: << parameters.cloudfront_distribution_id >>
+          cloudfront_invalidation_paths: << parameters.cloudfront_invalidation_paths >>
 
 examples:
   main:
@@ -59,6 +80,9 @@ examples:
           steps:
             - checkout
             - make
+            - persist_to_workspace:
+                root: .
+                paths: [dist]
       workflows:
         main:
           jobs:
@@ -68,6 +92,7 @@ examples:
                 filters:
                   branches:
                     only: master
-                workspace: /workspace
+                workspace: .
                 artifacts: dist
                 bucket: my-artifacts
+                cloudfront_distribution_id: ABCDEFG
