@@ -26,6 +26,9 @@ commands:
         type: string
         default: '/*'
     steps:
+      - run:
+          name: Add tar
+          command: apk add tar
       - attach_workspace:
           at: << parameters.workspace >>
       - run:
