@@ -4,12 +4,12 @@ executors:
   nodejs:
     working_directory: ~/project
     docker:
-      - image: circleci/node:8.10.0
+      - image: circleci/node:12.14.0
 
   app:
     working_directory: ~/project
     docker:
-      - image: circleci/node:8.10.0
+      - image: circleci/node:12.14.0
       - image: circleci/mysql:5.6-ram
         command: [--character-set-server=utf8mb4, --collation-server=utf8mb4_bin]
         environment:
