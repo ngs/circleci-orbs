@@ -22,11 +22,11 @@ jobs:
           steps:
             - run:
                 name: "Update Virus Database"
-                command: /usr/local/bin/freshclam
+                command: << parameters.bin >>/freshclam
       - checkout
       - run:
           name: "Run clamscan"
-          command: /usr/local/bin/clamscan -r << parameters.path >>
+          command: << parameters.bin >>/clamscan -r << parameters.path >>
 
 executors:
   clamav:
@@ -35,5 +35,8 @@ executors:
       tag:
         type: string
         default: "latest"
+      bin:
+        type: string
+        default: "/usr/bin"
     docker:
       - image: quay.io/ukhomeofficedigital/clamav:<< parameters.tag >>
