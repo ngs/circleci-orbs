@@ -9,7 +9,7 @@ executors:
     parameters:
       xcode:
         description: 'Xcode version'
-        default: '10.2.0'
+        default: '11.4.1'
         type: string
     environment:
       XCODE_PATH: /Applications/Xcode.app
